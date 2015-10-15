@@ -7,23 +7,16 @@
 # NO WARRANTY AT ALL
 #
 
-import sys, os, syslog, subprocess
+import sys, os, subprocess
 import time
-import signal
-import atexit
 
 def error(message):
-    #syslog.syslog(syslog.LOG_ERR, message)
     sys.stderr.write("ALERT: "+message+"\n")
 def debug(message):
-    #syslog.syslog(syslog.LOG_DEBUG, message)
     sys.stderr.write("DEBUG: "+message+"\n")
 
 argc = len(sys.argv)
 pidfile = "/run/sispmctl_turnoff.pid"
-atexit.register(syslog.closelog)
-syslog.openlog('sispmctl_printer', syslog.LOG_PID, syslog.LOG_LPR)
-
 debug("sispmctl argv[%s] = '%s'" % (argc, "', '".join(sys.argv)))
 
 if argc == 1:
