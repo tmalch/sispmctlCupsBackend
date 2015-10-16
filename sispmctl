@@ -1,55 +1,58 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # cups backend to switch on GEMBIRD SIS-PM outlet before printing and switch off after some time
-# based on mailto beckend by Robert Sander <robert.sander@epigenomics.com>
+# based on mailto backend by Robert Sander <robert.sander@epigenomics.com>
 # (C) 2015 Thomas Malcher
-# Released under GPL
+# Released under MIT Licence
 # NO WARRANTY AT ALL
 #
 import sys, os, subprocess
 import time
 import signal
+import tempfile
 
 pidfile = "/run/sispmctl_turnoff.pid"
 sispmctl_binary = "/usr/bin/sispmctl"
-path = os.path.dirname(os.path.realpath(__file__))
-turnoff_script = path+"/sispmctl_turnoff.py"
+backend_path = os.path.dirname(os.path.realpath(__file__))
+turnoff_script = backend_path+"/sispmctl_turnoff.py"
 
 def error(message):
-    sys.stderr.write("ERROR: "+message+"\n")
+    sys.stderr.write("ERROR: sispmctl backend - "+message+"\n")
 def debug(message):
-    sys.stderr.write("DEBUG: "+message+"\n")
+    return
+    sys.stderr.write("DEBUG: sispmctl backend - "+message+"\n")
 
-if not os.path.exists(sispmctl_binary):
-		sys.exit(1)
-
-argc = len(sys.argv)
-debug("sispmctl argv[%s] = '%s'" % (argc, "', '".join(sys.argv)))
-if argc == 1:
-    print("direct sispmctl \"Unknown\" \"SISPMCTL\"")
-    sys.exit(0)
-
-if argc < 6 or argc > 7:
-    error("ERROR: %s job-id user title copies options [file]" % sys.argv[0])
-    sys.exit(1)
-
-jobid = sys.argv[1]
-user = sys.argv[2]
-title = sys.argv[3]
-copies = sys.argv[4]
-opts = sys.argv[5]
-
-deviceuri = os.environ['DEVICE_URI']
-debug("INFO: Deviceuri:" + deviceuri)
 try:
+	if not os.path.exists(sispmctl_binary):
+			error("sispmctl binary does not exist: "+sispmctl_binary)
+			sys.exit(1)
+
+	argc = len(sys.argv)
+	debug("sispmctl argv[%s] = '%s'" % (argc, "', '".join(sys.argv)))
+	if argc == 1:
+		  print("direct sispmctl://outlet_number/originalURI \"Unknown\" \"SISPMCTL\"")
+		  sys.exit(0)
+
+	if argc < 6 or argc > 7:
+		  error("wrong argument number: sispmctl job-id user title copies options [file]")
+		  sys.exit(1)
+
+	jobid = sys.argv[1]
+	user = sys.argv[2]
+	title = sys.argv[3]
+	copies = sys.argv[4]
+	opts = sys.argv[5]
+
+	deviceuri = os.environ['DEVICE_URI']
+	debug("Deviceuri: " + deviceuri)
 	if argc == 7:
 		  infilename = sys.argv[6]
-		  debug("INFO: file is "+infilename)
+		  debug("file is "+infilename)
 	else:
-			infilename = os.tempnam()
-			with open(infilename, "w") as infile:
+			with tempfile.NamedTemporaryFile(delete=False) as infile:
+				infilename = infile.name
 				infile.write(sys.stdin.read())
-			debug("INFO: copied stdin to tmp file " + infilename)
+			debug("copied stdin to tmp file " + infilename)
 	#decode outlet number
 	switchnr = None
 	if type(deviceuri) == str and deviceuri.startswith("sispmctl://"):
@@ -79,27 +82,28 @@ try:
 		except Exception as e:
 			os.remove(pidfile)
 			error("ERROR was not able to kill turnoff process: "+str(e))
-	#turn the outlet for the printer on
+	#turn on the outlet for the printer
 	subprocess.check_call([sispmctl_binary,"-o",str(switchnr)])
 	debug("outlet number "+str(switchnr)+" switched on")
 	time.sleep(10)
+	
 	#call the original backend
 	i = deviceuri.find(":")
-	backend = "/usr/lib/cups/backend/"+deviceuri[:i]
+	backend = backend_path+"/"+deviceuri[:i]
 	debug("orig backend " + backend)
 	os.environ['DEVICE_URI'] = deviceuri
 	title = "\""+title+"\""
 	options = "\""+opts+"\""
 	orig_backend_command = [backend,jobid,user,title,copies,options,infilename]
-	debug("execute backend %s" % " ".join(command))
-	subprocess.check_call(command)
-	debug("usb backend ist fertig")
+	debug("execute backend %s" % " ".join(orig_backend_command))
+	subprocess.check_call(orig_backend_command)
+	
 	#start turnoff process
-	subprocess.check_call(['/usr/lib/cups/backend/sispmctl_turnoff.py',str(switchnr)])
+	subprocess.check_call([turnoff_script,str(switchnr)])
 	debug("turnoff started")
 	sys.exit(0)
 except Exception as e:
-	error(str(e))
+	error(str(type(e))+"::"+str(e))
 	sys.exit(1)
 
 
