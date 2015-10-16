@@ -1,18 +1,23 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
+# cups backend to switch on GEMBIRD SIS-PM outlet before printing and switch off after some time
+# based on mailto beckend by Robert Sander <robert.sander@epigenomics.com>
+# (C) 2015 Thomas Malcher
+# Released under GPL
+# NO WARRANTY AT ALL
+#
 import sys, os, syslog, subprocess
 import time
 import atexit
 import daemon
 pidfile = "/run/sispmctl_turnoff.pid"
+sispmctl_binary = "/usr/bin/sispmctl"
 
 def error(message):
     syslog.syslog(syslog.LOG_ERR, message)
-    sys.stderr.write("ALERT: "+message+"\n")
 def debug(message):
     syslog.syslog(syslog.LOG_DEBUG, message)
-    sys.stderr.write("DEBUG: "+message+"\n")
+
 
 def delpidfile(pidfile):
     import os
@@ -21,11 +26,10 @@ def delpidfile(pidfile):
       print("PID file deleted")
 
 def createpidfile(pidfile):
-    pid = str(os.getpid())
-    f = file(pidfile,"w+")
-    f.write("%s\n" % pid)
-    f.close()
-    debug("PID file created")
+		pid = str(os.getpid())
+		with open(pidfile,"w+") as f:
+			f.write("%s\n" % pid)
+		debug("PID file created")
 
 with daemon.DaemonContext():
 	try:
@@ -47,11 +51,12 @@ with daemon.DaemonContext():
 		time.sleep(5*60) # wait for 5 minutes till switching off 
 
 		debug("waiting time done, going to switch off outlet "+switchnr)
-		command_off = ["/usr/bin/sispmctl","-f",nr]
+		command_off = [sispmctl_binary,"-f",switchnr]
 		subprocess.check_call(command_off)
 		debug("switched off outlet "+switchnr)
 		sys.exit(0)
 	except Exception as e:
 		error("ERROR: "+str(e))
+		sys.exit(1)
 
 

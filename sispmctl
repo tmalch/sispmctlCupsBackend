@@ -6,21 +6,27 @@
 # Released under GPL
 # NO WARRANTY AT ALL
 #
-
 import sys, os, subprocess
 import time
+import signal
+
+pidfile = "/run/sispmctl_turnoff.pid"
+sispmctl_binary = "/usr/bin/sispmctl"
+path = os.path.dirname(os.path.realpath(__file__))
+turnoff_script = path+"/sispmctl_turnoff.py"
 
 def error(message):
-    sys.stderr.write("ALERT: "+message+"\n")
+    sys.stderr.write("ERROR: "+message+"\n")
 def debug(message):
     sys.stderr.write("DEBUG: "+message+"\n")
 
-argc = len(sys.argv)
-pidfile = "/run/sispmctl_turnoff.pid"
-debug("sispmctl argv[%s] = '%s'" % (argc, "', '".join(sys.argv)))
+if not os.path.exists(sispmctl_binary):
+		sys.exit(1)
 
+argc = len(sys.argv)
+debug("sispmctl argv[%s] = '%s'" % (argc, "', '".join(sys.argv)))
 if argc == 1:
-    print "direct sispmctl \"Unknown\" \"SISPMCTL\""
+    print("direct sispmctl \"Unknown\" \"SISPMCTL\"")
     sys.exit(0)
 
 if argc < 6 or argc > 7:
@@ -74,7 +80,7 @@ try:
 			os.remove(pidfile)
 			error("ERROR was not able to kill turnoff process: "+str(e))
 	#turn the outlet for the printer on
-	subprocess.check_call(["/usr/bin/sispmctl","-o",str(switchnr)])
+	subprocess.check_call([sispmctl_binary,"-o",str(switchnr)])
 	debug("outlet number "+str(switchnr)+" switched on")
 	time.sleep(10)
 	#call the original backend
