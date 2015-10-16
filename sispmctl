@@ -8,13 +8,11 @@
 #
 import sys, os, subprocess
 import time
-import signal
 import tempfile
 
-pidfile = "/run/sispmctl_turnoff.pid"
+minutes_till_switchoff = 10
 sispmctl_binary = "/usr/bin/sispmctl"
 backend_path = os.path.dirname(os.path.realpath(__file__))
-turnoff_script = backend_path+"/sispmctl_turnoff.py"
 
 def error(message):
     sys.stderr.write("ERROR: sispmctl backend - "+message+"\n")
@@ -42,9 +40,7 @@ try:
 	title = sys.argv[3]
 	copies = sys.argv[4]
 	opts = sys.argv[5]
-
-	deviceuri = os.environ['DEVICE_URI']
-	debug("Deviceuri: " + deviceuri)
+	#read input
 	if argc == 7:
 		  infilename = sys.argv[6]
 		  debug("file is "+infilename)
@@ -53,6 +49,9 @@ try:
 				infilename = infile.name
 				infile.write(sys.stdin.read())
 			debug("copied stdin to tmp file " + infilename)
+
+	deviceuri = os.environ['DEVICE_URI']
+	debug("Deviceuri: " + deviceuri)
 	#decode outlet number
 	switchnr = None
 	if type(deviceuri) == str and deviceuri.startswith("sispmctl://"):
@@ -72,20 +71,15 @@ try:
 	if not switchnr:
 		error("was not able to decode outlet number")
 		sys.exit(1)
-	#check if turnoff process is already running, if so stop it 
-	if os.path.exists(pidfile):
-		debug("turnoff process already running -> stop it")
-		try:
-			with open(pidfile,"r") as f:
-				tpid = f.readline(10)
-			os.kill(int(tpid), signal.SIGTERM)
-		except Exception as e:
-			os.remove(pidfile)
-			error("ERROR was not able to kill turnoff process: "+str(e))
-	#turn on the outlet for the printer
-	subprocess.check_call([sispmctl_binary,"-o",str(switchnr)])
-	debug("outlet number "+str(switchnr)+" switched on")
-	time.sleep(10)
+
+	subprocess.check_call([sispmctl_binary,"-A",str(switchnr),"--Aafter", str(minutes_till_switchoff),"--Ado off"])	
+	
+	outlet_status = subprocess.check_output([sispmctl_binary,"-q","-g",str(switchnr)])
+	if outlet_status.strip() == "off":
+		#turn on the outlet for the printer
+		subprocess.check_call([sispmctl_binary,"-o",str(switchnr)])
+		debug("outlet number "+str(switchnr)+" switched on")
+		time.sleep(10) #wait some seconds until printer is ready
 	
 	#call the original backend
 	i = deviceuri.find(":")
@@ -97,10 +91,6 @@ try:
 	orig_backend_command = [backend,jobid,user,title,copies,options,infilename]
 	debug("execute backend %s" % " ".join(orig_backend_command))
 	subprocess.check_call(orig_backend_command)
-	
-	#start turnoff process
-	subprocess.check_call([turnoff_script,str(switchnr)])
-	debug("turnoff started")
 	sys.exit(0)
 except Exception as e:
 	error(str(type(e))+"::"+str(e))
