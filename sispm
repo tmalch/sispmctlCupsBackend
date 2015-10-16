@@ -11,16 +11,16 @@ import time
 import signal
 import tempfile
 
-pidfile = "/run/sispmctl_turnoff.pid"
+pidfile = "/run/sispm_turnoff.pid"
 sispmctl_binary = "/usr/bin/sispmctl"
 backend_path = os.path.dirname(os.path.realpath(__file__))
-turnoff_script = backend_path+"/sispmctl_turnoff.py"
+turnoff_script = backend_path+"/sispm_turnoff"
 
 def error(message):
-    sys.stderr.write("ERROR: sispmctl backend - "+message+"\n")
+    sys.stderr.write("ERROR: sispm backend - "+message+"\n")
 def debug(message):
     return
-    sys.stderr.write("DEBUG: sispmctl backend - "+message+"\n")
+    sys.stderr.write("DEBUG: sispm backend - "+message+"\n")
 
 try:
 	if not os.path.exists(sispmctl_binary):
@@ -28,13 +28,13 @@ try:
 			sys.exit(1)
 
 	argc = len(sys.argv)
-	debug("sispmctl argv[%s] = '%s'" % (argc, "', '".join(sys.argv)))
+	debug("sispm argv[%s] = '%s'" % (argc, "', '".join(sys.argv)))
 	if argc == 1:
-		  print("network sispmctl \"Unknown\" \"SISPMCTL\"")
+		  print("network sispm \"Unknown\" \"SISPM auto power on\"")
 		  sys.exit(0)
 
 	if argc < 6 or argc > 7:
-		  error("wrong argument number: sispmctl job-id user title copies options [file]")
+		  error("wrong argument number: sispm job-id user title copies options [file]")
 		  sys.exit(1)
 
 	jobid = sys.argv[1]
@@ -55,12 +55,12 @@ try:
 			debug("copied stdin to tmp file " + infilename)
 	#decode outlet number
 	switchnr = None
-	if type(deviceuri) == str and deviceuri.startswith("sispmctl://"):
-		  nested_uri_idx = deviceuri.find("/", 11)
+	if type(deviceuri) == str and deviceuri.startswith("sispm://"):
+		  nested_uri_idx = deviceuri.find("/", len("sispm://"))
 		  if nested_uri_idx < 0:
 		    error("wrong URI format, could not find nested original URI "+deviceuri)
 		    sys.exit(1)
-		  switchnr = str(int(deviceuri[11:nested_uri_idx]))
+		  switchnr = str(int(deviceuri[len("sispm://"):nested_uri_idx]))
 		  deviceuri = deviceuri[nested_uri_idx+1:]
 		  debug("decoded original deviceuri " + deviceuri)
 	else:

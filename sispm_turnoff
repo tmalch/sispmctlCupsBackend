@@ -10,7 +10,7 @@ import sys, os, syslog, subprocess
 import time
 import atexit
 import daemon
-pidfile = "/run/sispmctl_turnoff.pid"
+pidfile = "/run/sispm_turnoff.pid"
 sispmctl_binary = "/usr/bin/sispmctl"
 
 def error(message):
@@ -32,7 +32,7 @@ def createpidfile(pidfile):
 
 try:
 	atexit.register(syslog.closelog)
-	syslog.openlog('sispmctl_turnoff', syslog.LOG_PID, syslog.LOG_LPR)
+	syslog.openlog('sispm_turnoff', syslog.LOG_PID, syslog.LOG_LPR)
 	syslog.setlogmask(syslog.LOG_MASK(syslog.LOG_ERR))
 	if os.path.exists(pidfile):
 			error("turnoff process already running -> exit")
