@@ -9,3 +9,9 @@ tested on Ubuntu 14.04.3 LTS
 ### Installation
 copy both files (sispmctl, sispmctl_turnoff.py) into cups backend folder (/usr/lib/cups/backend) and restart cups
 
+### Usage
+first get the URI for your printer eg. usb://Brother/HL-2030%20series  
+then add a new printer, select Network Printer SISPMCTL - continue  
+as Connection URI set sispmctl://outlet_number/original_URI   
+*outlet_number* is the number of the outlet at the Sis-PM strip to which the printer is connected and *original_URI* is the URI of the printer your retrieved in the first step
+eg. sispmctl://3/usb://Brother/HL-2030%20series

@@ -37,7 +37,9 @@ try:
 	if os.path.exists(pidfile):
 			error("turnoff process already running -> exit")
 			sys.exit(1)
-	if len(sys.argv) != 2:
+	if len(sys.argv) < 2:
+		sys.exit(0)
+	if len(sys.argv) > 2:
 		error("wrong number of arguments")
 		sys.exit(1)
 	switchnr = sys.argv[1]

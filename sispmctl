@@ -30,7 +30,7 @@ try:
 	argc = len(sys.argv)
 	debug("sispmctl argv[%s] = '%s'" % (argc, "', '".join(sys.argv)))
 	if argc == 1:
-		  print("direct sispmctl://outlet_number/originalURI \"Unknown\" \"SISPMCTL\"")
+		  print("network sispmctl \"Unknown\" \"SISPMCTL\"")
 		  sys.exit(0)
 
 	if argc < 6 or argc > 7:
