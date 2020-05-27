@@ -1,3 +1,5 @@
+# Archived 
+Use https://github.com/tmalch/cupsPowerOn as a more general solution
 # sispm cups backend
 a cups backend for using Gembird Programmable Power Outlet strips to automatically switch on a printer when cups receives a print job for it
 ### Requires
